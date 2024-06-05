@@ -7,6 +7,7 @@ using MSA.Common.PostgresMassTransit.PostgresDB;
 using MSA.OrderService.Services;
 using MassTransit;
 using MSA.Common.Contracts.Domain.Commands.Product;
+using MSA.Common.Contracts.Domain.Events.Order;
 
 namespace MSA.OrderService.Controllers;
 
@@ -19,6 +20,7 @@ public class OrderController : ControllerBase
     private readonly PostgresUnitOfWork<MainDbContext> uow;
     private readonly IProductService productService;
     private readonly ISendEndpointProvider sendEndpointProvider;
+    private readonly IPublishEndpoint publishEndpoint;
 
 
     public OrderController(
@@ -26,12 +28,14 @@ public class OrderController : ControllerBase
         PostgresUnitOfWork<MainDbContext> uow
 ,
         IProductService productService,
-        ISendEndpointProvider sendEndpointProvider)
+        ISendEndpointProvider sendEndpointProvider,
+        IPublishEndpoint publishEndpoint)
     {
         this.repository = repository;
         this.uow = uow;
         this.productService = productService;
         this.sendEndpointProvider = sendEndpointProvider;
+        this.publishEndpoint = publishEndpoint;
     }
 
     [HttpGet]
@@ -55,17 +59,24 @@ public class OrderController : ControllerBase
         };
         await repository.CreateAsync(order);
 
-        await uow.SaveChangeAsync();
-
         //async validate
-        var endpoint = await sendEndpointProvider.GetSendEndpoint(
-            new Uri("queue:product-validate-product")
-        );
-        await endpoint.Send(new ValidateProduct
-        {
-            OrderId = order.Id,
-            ProductId = createOrderDto.ProductId
-        });
+        // var endpoint = await sendEndpointProvider.GetSendEndpoint(
+        //     new Uri("queue:product-validate-product")
+        // );
+        // await endpoint.Send(new ValidateProduct{
+        //     OrderId = order.Id,
+        //     ProductId = createOrderDto.ProductId
+        // });
+
+        //async Orchestrator
+        await publishEndpoint.Publish<OrderSubmitted>(
+            new OrderSubmitted
+            {
+                OrderId = order.Id,
+                ProductId = createOrderDto.ProductId
+            });
+
+        await uow.SaveChangeAsync();
 
         return CreatedAtAction(nameof(PostAsync), order);
     }
