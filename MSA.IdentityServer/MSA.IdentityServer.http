@@ -1,0 +1,6 @@
+@MSA.IdentityServer_HostAddress = http://localhost:5127
+
+GET {{MSA.IdentityServer_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

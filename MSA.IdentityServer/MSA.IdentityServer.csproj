@@ -7,15 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="DuenDe.IdentityServer" Version="7.0.5" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.5" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\MSA.Common.Contracts\MSA.Common.Contracts.csproj" />
-    <ProjectReference Include="..\MSA.Common.Mongo\MSA.Common.Mongo.csproj" />
-    <ProjectReference Include="..\MSA.Common.PostgresMassTransit\MSA.Common.PostgresMassTransit.csproj" />
-    <ProjectReference Include="..\MSA.Common.Security\MSA.Common.Security.csproj" />
   </ItemGroup>
 
 </Project>
