@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
   mongo:
     image: mongo
@@ -31,6 +33,73 @@ services:
       - 5432:5432
     volumes:
       - postgresqldata:/var/lib/postgresql/data
+    networks:
+      - msa-network
+
+  product-service:
+    image: product-service:latest
+    build:
+      context: .
+      dockerfile: ./MSA.ProductService/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - MongoDBSetting__Host=mongo
+      - ASPNETCORE_URLS=https://+:5002
+      - RabbitMQSetting__Host=rabbitmq
+      - ServiceUrlsSetting__IdentityServiceUrl=https://identity-service:5001
+      - Kestrel__Certificates__Default__Password=11062000
+      - Kestrel__Certificates__Default__Path=https/localhost.pfx
+    volumes:
+      - ./aspnet/https:/app/https:ro
+      - /usr/local/share/ca-certificates:/usr/local/share/ca-certificates
+      - /etc/ssl/certs:/etc/ssl/certs
+    ports:
+      - "5002:5002"
+    restart: always
+    networks:
+      - msa-network
+
+  identity-service:
+    image: identity-service:latest
+    build:
+      context: .
+      dockerfile: ./MSA.IdentityServer/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=https://+:5001;http://+:15001
+      - Kestrel__Certificates__Default__Password=11062000
+      - Kestrel__Certificates__Default__Path=https/localhost.pfx
+    volumes:
+      - ./aspnet/https:/app/https:ro
+      - /usr/local/share/ca-certificates:/usr/local/share/ca-certificates
+      - /etc/ssl/certs:/etc/ssl/certs
+    ports:
+      - "5001:5001"
+      - "15001:15001"
+    restart: always
+    networks:
+      - msa-network
+
+  reverse-proxy:
+    image: reverse-proxy:latest
+    build:
+      context: .
+      dockerfile: ./MSA.ReverseProxy/Dockerfile
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ReverseProxy__Clusters__identityApiCluster__Destinations__destination1__Address=https://identity-service:5001/
+      - ReverseProxy__Clusters__productApiCluster__Destinations__destination1__Address=https://product-service:5002/
+      - ASPNETCORE_URLS=https://+:8080;http://+:18080
+      - Kestrel__Certificates__Default__Password=11062000
+      - Kestrel__Certificates__Default__Path=https/localhost.pfx
+    volumes:
+      - ./aspnet/https:/app/https:ro
+      - /usr/local/share/ca-certificates:/usr/local/share/ca-certificates
+      - /etc/ssl/certs:/etc/ssl/certs
+    ports:
+      - "8080:8080"
+      - "18080:18080"
+    restart: always
     networks:
       - msa-network
 
