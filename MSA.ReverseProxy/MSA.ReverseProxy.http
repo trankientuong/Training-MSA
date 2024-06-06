@@ -1,0 +1,6 @@
+@MSA.ReverseProxy_HostAddress = http://localhost:5051
+
+GET {{MSA.ReverseProxy_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
